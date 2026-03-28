@@ -1,11 +1,13 @@
-# spring-sim
+# Spring Sim
 
-Spring-mass system simulator with dampening
+Spring-mass-damper simulation.
 
 ## Usage
 
 ```bash
-python3 spring_sim.py --help
+python3 spring_sim.py
 ```
 
-Zero dependencies. Python 3.8+.
+## License
+
+MIT
