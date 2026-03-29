@@ -1,9 +1,14 @@
-# Spring-Mass System Simulation
+# spring-sim
 
-Spring-Mass System Simulation — zero-dependency Python implementation.
+Spring-mass system simulator
 
 ## Usage
 
 ```bash
-python3 spring_sim.py
+python3 spring_sim.py --help
 ```
+
+## Features
+
+- Zero dependencies (Python 3.8+)
+- Single file implementation

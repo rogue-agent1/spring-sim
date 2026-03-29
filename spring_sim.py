@@ -1,33 +1,21 @@
 #!/usr/bin/env python3
-"""Spring-mass-damper system with Verlet integration."""
-import sys, math
-
-class Spring:
-    def __init__(self, n_masses=5, k=10, damping=0.1, rest_length=1.0):
-        self.k, self.damp, self.rest = k, damping, rest_length
-        self.x = [i*rest_length for i in range(n_masses)]
-        self.v = [0.0]*n_masses; self.m = [1.0]*n_masses
-        self.m[0] = float('inf')  # fixed anchor
-    def step(self, dt=0.01):
-        forces = [0.0]*len(self.x)
-        for i in range(len(self.x)-1):
-            dx = self.x[i+1]-self.x[i]; stretch = dx - self.rest
-            f = self.k * stretch
-            forces[i] += f; forces[i+1] -= f
-        for i in range(len(self.x)):
-            forces[i] -= self.damp * self.v[i]
-        for i in range(1, len(self.x)):
-            self.v[i] += forces[i]/self.m[i]*dt
-            self.x[i] += self.v[i]*dt
-
+"""spring_sim - Damped spring simulation."""
+import sys,argparse,json,math
+def simulate(mass=1.0,k=10.0,damping=0.1,x0=1.0,v0=0.0,dt=0.01,steps=1000):
+    x,v=x0,v0;history=[]
+    for i in range(steps):
+        a=(-k*x-damping*v)/mass
+        v+=a*dt;x+=v*dt
+        if i%(steps//50)==0:
+            history.append({"t":round(i*dt,4),"x":round(x,6),"v":round(v,6),"energy":round(0.5*mass*v**2+0.5*k*x**2,6)})
+    omega=math.sqrt(k/mass);period=2*math.pi/omega
+    return history,period
 def main():
-    s = Spring(8, k=20, damping=0.5)
-    s.x[-1] += 2.0  # stretch last mass
-    for step in range(200):
-        s.step(0.02)
-        if step % 20 == 0:
-            positions = " ".join(f"{x:.2f}" for x in s.x)
-            energy = sum(0.5*m*v**2 for m,v in zip(s.m[1:],s.v[1:]))
-            print(f"t={step*0.02:.1f}s KE={energy:.3f} pos=[{positions}]")
-
-if __name__ == "__main__": main()
+    p=argparse.ArgumentParser(description="Spring simulator")
+    p.add_argument("--mass",type=float,default=1.0);p.add_argument("--k",type=float,default=10.0)
+    p.add_argument("--damping",type=float,default=0.1);p.add_argument("--x0",type=float,default=1.0)
+    p.add_argument("--steps",type=int,default=2000)
+    args=p.parse_args()
+    history,period=simulate(args.mass,args.k,args.damping,args.x0,steps=args.steps)
+    print(json.dumps({"mass":args.mass,"k":args.k,"damping":args.damping,"natural_period":round(period,4),"natural_freq":round(1/period,4),"history":history},indent=2))
+if __name__=="__main__":main()
