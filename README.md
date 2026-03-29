@@ -1,6 +1,6 @@
 # spring-sim
 
-Spring-mass system simulator
+Spring Physics Simulation. Zero-dependency, single-file Python CLI.
 
 ## Usage
 
@@ -8,7 +8,6 @@ Spring-mass system simulator
 python3 spring_sim.py --help
 ```
 
-## Features
+## License
 
-- Zero dependencies (Python 3.8+)
-- Single file implementation
+MIT
