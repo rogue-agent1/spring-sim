@@ -1,13 +1,11 @@
 # spring-sim
 
-Spring Physics Simulation. Zero-dependency, single-file Python CLI.
+Spring-mass-damper system simulator.
 
 ## Usage
 
 ```bash
-python3 spring_sim.py --help
+python3 spring_sim.py test
 ```
 
-## License
-
-MIT
+Zero dependencies. Python 3.8+.
