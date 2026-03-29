@@ -1,11 +1,17 @@
-# spring-sim
+# spring_sim
 
-Spring-mass-damper system simulator.
+Spring-mass system simulator (Hooke's law)
+
+Single-file, zero-dependency Python CLI tool.
 
 ## Usage
 
 ```bash
-python3 spring_sim.py test
+python spring_sim.py --help
 ```
 
-Zero dependencies. Python 3.8+.
+## Test
+
+```bash
+python -c "import spring_sim; spring_sim.test()"
+```

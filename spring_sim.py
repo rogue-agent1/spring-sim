@@ -1,87 +1,87 @@
 #!/usr/bin/env python3
-"""spring_sim - Spring-mass-damper system simulator."""
-import sys, math
+"""Spring-mass system simulator."""
+import math
 
 class Spring:
-    def __init__(self, k, rest_length, damping=0):
+    def __init__(self, k=1.0, rest_length=1.0, damping=0.1):
         self.k = k
         self.rest_length = rest_length
         self.damping = damping
 
-class Particle:
-    def __init__(self, x, y, mass=1, fixed=False):
-        self.x = x; self.y = y
-        self.vx = 0; self.vy = 0
-        self.fx = 0; self.fy = 0
-        self.mass = mass
-        self.fixed = fixed
+class Mass:
+    def __init__(self, x=0, v=0, m=1.0, fixed=False):
+        self.x, self.v, self.m, self.fixed = x, v, m, fixed
 
 class SpringSystem:
     def __init__(self):
-        self.particles = []
+        self.masses = []
         self.springs = []
-    def add_particle(self, x, y, mass=1, fixed=False):
-        p = Particle(x, y, mass, fixed)
-        self.particles.append(p)
-        return len(self.particles) - 1
-    def add_spring(self, i, j, k=10, rest_length=None, damping=0.1):
-        if rest_length is None:
-            dx = self.particles[j].x - self.particles[i].x
-            dy = self.particles[j].y - self.particles[i].y
-            rest_length = math.sqrt(dx*dx + dy*dy)
-        self.springs.append((i, j, Spring(k, rest_length, damping)))
-    def step(self, dt, gravity=0):
-        for p in self.particles:
-            p.fx = 0
-            p.fy = gravity * p.mass
-        for i, j, spring in self.springs:
-            a, b = self.particles[i], self.particles[j]
-            dx = b.x - a.x
-            dy = b.y - a.y
-            dist = math.sqrt(dx*dx + dy*dy)
-            if dist < 1e-10: continue
-            force = spring.k * (dist - spring.rest_length)
-            dvx = b.vx - a.vx
-            dvy = b.vy - a.vy
-            damp = spring.damping * (dvx*dx + dvy*dy) / dist
-            fx = (force + damp) * dx / dist
-            fy = (force + damp) * dy / dist
-            a.fx += fx; a.fy += fy
-            b.fx -= fx; b.fy -= fy
-        for p in self.particles:
-            if p.fixed: continue
-            p.vx += p.fx / p.mass * dt
-            p.vy += p.fy / p.mass * dt
-            p.x += p.vx * dt
-            p.y += p.vy * dt
+
+    def add_mass(self, **kw):
+        m = Mass(**kw)
+        self.masses.append(m)
+        return m
+
+    def connect(self, i, j, **kw):
+        s = Spring(**kw)
+        self.springs.append((i, j, s))
+        return s
+
+    def step(self, dt):
+        forces = [0.0] * len(self.masses)
+        for i, j, s in self.springs:
+            dx = self.masses[j].x - self.masses[i].x
+            dist = abs(dx)
+            direction = 1 if dx >= 0 else -1
+            stretch = dist - s.rest_length
+            f = s.k * stretch * direction
+            dv = self.masses[j].v - self.masses[i].v
+            f += s.damping * dv * direction
+            forces[i] += f
+            forces[j] -= f
+        for idx, m in enumerate(self.masses):
+            if not m.fixed:
+                a = forces[idx] / m.m
+                m.v += a * dt
+                m.x += m.v * dt
+
     def energy(self):
-        ke = sum(0.5 * p.mass * (p.vx**2 + p.vy**2) for p in self.particles)
+        ke = sum(0.5 * m.m * m.v**2 for m in self.masses)
         pe = 0
-        for i, j, spring in self.springs:
-            a, b = self.particles[i], self.particles[j]
-            dx = b.x - a.x; dy = b.y - a.y
-            dist = math.sqrt(dx*dx + dy*dy)
-            pe += 0.5 * spring.k * (dist - spring.rest_length)**2
+        for i, j, s in self.springs:
+            dx = abs(self.masses[j].x - self.masses[i].x)
+            pe += 0.5 * s.k * (dx - s.rest_length)**2
         return ke + pe
 
-def test():
-    sys = SpringSystem()
-    sys.add_particle(0, 0, fixed=True)
-    sys.add_particle(2, 0)
-    sys.add_spring(0, 1, k=20, rest_length=1, damping=0.5)
-    e0 = sys.energy()
-    for _ in range(1000):
-        sys.step(0.01)
-    # with damping, energy should decrease
-    e1 = sys.energy()
-    assert e1 < e0
-    # particle should be near rest length
-    dist = math.sqrt(sys.particles[1].x**2 + sys.particles[1].y**2)
-    assert abs(dist - 1.0) < 0.5
-    print("OK: spring_sim")
-
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        test()
-    else:
-        print("Usage: spring_sim.py test")
+    sys = SpringSystem()
+    sys.add_mass(x=0, fixed=True)
+    sys.add_mass(x=2, m=1)
+    sys.connect(0, 1, k=10, rest_length=1, damping=0.5)
+    for _ in range(100):
+        sys.step(0.01)
+    print(f"Position: {sys.masses[1].x:.3f}, Velocity: {sys.masses[1].v:.3f}")
+
+def test():
+    s = SpringSystem()
+    s.add_mass(x=0, fixed=True)
+    s.add_mass(x=2, m=1)
+    s.connect(0, 1, k=10, rest_length=1, damping=0)
+    e0 = s.energy()
+    for _ in range(1000):
+        s.step(0.001)
+    e1 = s.energy()
+    # Energy should be roughly conserved (small dt)
+    assert abs(e1 - e0) / e0 < 0.05
+    # With damping, energy decreases
+    s2 = SpringSystem()
+    s2.add_mass(x=0, fixed=True)
+    s2.add_mass(x=3, m=1)
+    s2.connect(0, 1, k=10, rest_length=1, damping=2)
+    e_start = s2.energy()
+    for _ in range(5000):
+        s2.step(0.001)
+    assert s2.energy() < e_start * 0.5
+    # Should settle near rest length
+    assert abs(s2.masses[1].x - 1) < 0.5
+    print("  spring_sim: ALL TESTS PASSED")
