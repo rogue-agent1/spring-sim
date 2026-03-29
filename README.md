@@ -1,13 +1,9 @@
-# Spring Sim
+# Spring-Mass System Simulation
 
-Spring-mass-damper simulation.
+Spring-Mass System Simulation — zero-dependency Python implementation.
 
 ## Usage
 
 ```bash
 python3 spring_sim.py
 ```
-
-## License
-
-MIT
